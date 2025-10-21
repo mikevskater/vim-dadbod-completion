@@ -6,7 +6,10 @@ local map_kind_to_cmp_lsp_kind = {
   C = 5,  -- Column -> Field
   A = 6,  -- Alias -> Variable
   T = 7,  -- Table -> Class
+  V = 7,  -- View -> Class
   R = 14, -- Reserved -> Keyword
+  P = 2,  -- Procedure -> Method
+  D = 8,  -- Database -> Module
   S = 19, -- Schema -> Folder
 }
 
@@ -53,7 +56,28 @@ function M:get_completions(ctx, callback)
     })
   end
 
-  local results = vim.api.nvim_call_function('vim_dadbod_completion#omni', { 0, input })
+  -- Try enhanced vim-dadbod-ui IntelliSense first (if available)
+  local bufnr = vim.api.nvim_get_current_buf()
+  local results = {}
+
+  -- Check if vim-dadbod-ui IntelliSense is available
+  local intellisense_available = vim.fn.exists('*vim_dadbod_completion#dbui#is_available') == 1 and
+                                  vim.api.nvim_call_function('vim_dadbod_completion#dbui#is_available', {}) == 1
+
+  if intellisense_available then
+    -- Use enhanced IntelliSense completions
+    results = vim.api.nvim_call_function('vim_dadbod_completion#dbui#get_completions', {
+      bufnr,
+      input,
+      line,
+      cursor_col
+    })
+  end
+
+  -- Fall back to standard completion if IntelliSense returns empty or is unavailable
+  if not results or #results == 0 then
+    results = vim.api.nvim_call_function('vim_dadbod_completion#omni', { 0, input })
+  end
 
   if not results then
     transformed_callback({})

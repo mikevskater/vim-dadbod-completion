@@ -32,6 +32,21 @@ function! vim_dadbod_completion#omni(findstart, base)
     return []
   endif
 
+  " Try enhanced vim-dadbod-ui IntelliSense first (if available)
+  if exists('*vim_dadbod_completion#dbui#is_available') &&
+        \ vim_dadbod_completion#dbui#is_available()
+    let enhanced_items = vim_dadbod_completion#dbui#get_completions(
+          \ bufnr,
+          \ a:base,
+          \ line,
+          \ col('.')
+          \ )
+    if !empty(enhanced_items)
+      return enhanced_items
+    endif
+    " If enhanced mode returns empty, fall through to standard completion
+  endif
+
   if !has_key(s:buffers, bufnr)
     call vim_dadbod_completion#fetch(bufnr(''))
   endif
